@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset='utf-8' />
+	<title>Religions in Transylvania</title>
+	<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+	<script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.css' rel='stylesheet' />
+</head>
+
+<body>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			font-family: 'Helvetica Neue', Helvetica, Arial, Sans-serif;
+			background: #404040;
+			color: #f8f8f8;
+		}
+
+		#map {
+			position: absolute;
+			top: 7px;
+			bottom: 0;
+			left: 5px;
+			right: 10px;
+			width: 99%;
+			height: 98%;
+		}
+        #console {
+			position: absolute;
+			width: 200px;
+			height: 410px;
+			padding: 10px 20px;
+			background: #404040;
+		}
+
+		p {
+			font-size: 14px;
+			line-height: 25px;
+			color: #404040;
+		}
+		h1 {
+			font-size: 16px;
+			line-height: 30px;
+		}
+
+		h2 {
+			font-size: 14px;
+			line-height: 20px;
+			margin-bottom: 10px;
+		}
+
+		a {
+			font-size: 14px;
+			text-decoration: none;
+			color: #3bb3c3;
+		}
+
+		.label {
+			width: 12%;
+			display: inline-block;
+			text-align: center;
+			font-size: 11px;
+		}
+
+		.map-overlay-inner {
+			background: #404040;
+			color: #f8f8f8;
+			width: 90%;
+		}
+
+		.map-overlay-inner fieldset {
+			border: 10px;
+			padding: 0;
+			margin: 0 0 10px;
+		}
+
+		.map-overlay-inner fieldset:last-child {
+			margin: 0;
+		}
+
+		.map-overlay-inner select {
+			width: 100%;
+			font-size: 14px
+		}
+
+		.map-overlay-inner label {
+			display: block;
+			font-weight: bold;
+			margin: 0 0 5px;
+			font-size: 16px;
+		}
+
+		.legend {
+			background-color: #ffffff;
+			border-radius: 10px;
+			bottom: 55px;
+			box-shadow: 0 1px 3px rgba(0,0,0,1);
+			font: 14px/16px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+			padding: 10px;
+			position: absolute;
+			right: 55px;
+			z-index: 1;
+			color: black;
+		}
+
+        .chartContainer {
+			background-color: #ffffff;
+			border-radius: 10px;
+			bottom: 300px;
+			box-shadow: 0 1px 3px rgba(0,0,0,1);
+			font: 14px/16px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+			padding: 5px;
+            right:50px;
+			position: absolute;
+			z-index: 1;
+		}
+
+        .checkbox {
+			font: 14px/16px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+			padding: 0px;
+			position: absolute;
+			z-index: 1;
+		}
+
+        .ckbutton{
+            left:130px;
+			position: absolute;
+			z-index: 1;
+		}
+        .closebutton{
+            right:3px;
+            top:3px;
+			position: absolute;
+			z-index: 1;
+		}
+			
+		.legend h4 {
+			margin: 0 0 10px;
+		}
+			
+		.legend div span {
+			border-radius: 50%;
+			display: inline-block;
+			height: 10px;
+			margin-right: 10px;
+			width: 10px;
+		}
+
+        .bar {
+            height: 21px;
+            transition: fill .3s ease;
+            font-family: Helvetica, sans-serif;
+            color: black;
+
+        }
+
+	</style>
+
+	<div id='map'></div>
+	<div id='console'>
+		<h1>Erdély felekezeti térképe</h1>
+		<h2>Adat: <a href='http://nepszamlalas.adatbank.ro/'>Erdély etnikai és felekezeti statisztikái a népszámlálási
+				adatok alapján </a>(1850-2011)</h2>
+
+		<div class='map-overlay-inner'>
+			<fieldset>
+				<label>Év kiválasztása:</label>
+				<select id='year' name='year' onChange="changeYear();" ;>
+					<option value='1850'>1850</option>
+					<option value='1857'>1857</option>
+					<option value='1869'>1869</option>
+					<option value='1880'>1880</option>
+					<option value='1890'>1890</option>
+					<option value='1900'>1900</option>
+					<option value='1910'>1910</option>
+					<option value='1930'>1930</option>
+					<option value='1941'>1941</option>
+					<option value='1992'>1992</option>
+					<option value='2002'>2002</option>
+					<option value='2011'>2011</option>
+				</select>
+            </fieldset>
+            <div class='checkbox'>
+				<br>
+				<label>Vallások kiválasztása:</label>
+                <input type="checkbox" name = "checkbox" value="ortodox" checked> Ortodox<br>
+                <input type="checkbox" name = "checkbox" value="gkat" checked> Görögkatolikus<br>
+                <input type="checkbox" name = "checkbox" value="reformatus" checked> Református<br>
+                <input type="checkbox" name = "checkbox" value="unitarius" checked> Unitárius<br>
+                <input type="checkbox" name = "checkbox" value="rkat" checked> Római katolikus<br>
+                <input type="checkbox" name = "checkbox" value="evang" checked> Evangélikus<br>
+				<input type="checkbox" name = "checkbox" value="zsido" checked> Zsidó<br>
+				<input type="checkbox" name = "checkbox" value="baptista" checked> Baptista<br>
+                <div id="ckbutton" class = 'ckbutton'>
+                        <button onclick="updateMarkers()" >Kész</button>
+                </div>             
+            </div>
+        </div>
+
+
+    </div>
+    <div id="chartContainer" class = 'chartContainer'></div>
+
+	<div id='religions-legend' class='legend'>
+		<h4>Színmagyarázat</h4>
+		<div><span style='background-color: #1f78b4' ></span>Ortodox</div>
+		<div><span style='background-color: #a6cee3'></span>Görögkatolikus</div>
+		<div><span style='background-color: #33a02c'></span>Református</div>
+		<div><span style='background-color: #b2df8a'></span>Unitárius</div>
+		<div><span style='background-color: #e31a1c' ></span>Római katolikus</div>
+		<div><span style='background-color: #fb9a99'></span>Evangélikus</div>
+		<div><span style='background-color: #fdbf6f'></span>Zsidó</div> 
+		<div><span style='background-color: #ff7f00'></span>Baptista</div>
+ 
+		
+	</div>
+	<script>
+
+ 	function loadJSON(callback) {   
+			var xobj = new XMLHttpRequest();
+			xobj.overrideMimeType("application/json");
+			xobj.open('GET', 'http://127.0.0.1:8000/translate_HU.json', true);
+			xobj.onreadystatechange = function () {
+				if (xobj.readyState == 4 && xobj.status == "200") {
+					callback(xobj.responseText);
+				}
+			};
+    		xobj.send(null);  
+ 		}
+
+	loadJSON(function(response) {
+	    jsonresponse = JSON.parse(response);
+		console.log(jsonresponse[0])
+
+	}); 
+		mapboxgl.accessToken = 'pk.eyJ1IjoienN1enNhZm9sZGkiLCJhIjoiY2p2NmZpcDNsMDRwdjQzcXA1bnhpcHNuciJ9.gK7LqsxDlYaOQQeRqOX9qA';
+
+		var map = new mapboxgl.Map({
+			container: 'map',
+			zoom: 6.6,
+			center: [24.6, 46.6],
+			style: 'mapbox://styles/mapbox/light-v10',
+			maxZoom:13,
+			minZoom:5
+		});
+
+		map.addControl(new mapboxgl.NavigationControl());
+
+
+		var years = [1850, 1857, 1869, 1880, 1890, 1900, 1910, 1930, 1941, 1992, 2002, 2011];
+
+		// colors to use for the categories
+		var colors = ['#1f78b4','#a6cee3','#33a02c','#b2df8a','#e31a1c','#fb9a99','#fdbf6f','#ff7f00'];
+	 	
+		var rel1 = ["has", 'Ortodox'];
+		var rel2 = ["has", 'GorogKatolikus'];
+		var rel3 = ["has", 'Reformatus'];
+		var rel4 = ["has", 'Unitarius'];
+		var rel5 = ["has", 'RomaiKatolikus'];
+		var rel61 = ["has", 'Evangelikus']; 
+		var rel62 = ["has", 'AgostaiEvang']; 
+		var rel63 = ["has", 'ZsinatPresvb']; 
+		var rel7 = ["has", 'Izraelita'];
+		var rel8 = ["has", 'Baptista'];
+		
+		map.on('load', function () {
+			// 	// add a clustered GeoJSON source for a sample set of religions
+			for (var idx in years) {
+				var year = years[idx]
+				var source = 'source' + year
+				var yearFilt = ["==", ["get", "Ev"], year]
+				var path = "" // geojson file path
+
+				map.addSource(source, { 
+					"type": "geojson",
+					"data": path + year + ".geojson",
+					"cluster": true,
+					"clusterRadius": 60,
+					"clusterProperties": { // keep separate counts for each category in a cluster
+						rel1: ["+", ["case", yearFilt, ["get", "Ortodox"], 0]],
+						rel2: ["+", ["case", yearFilt, ["get", "GorogKatolikus"], 0]],
+						rel3: ["+", ["case", yearFilt, ["get", "Reformatus"], 0]],
+						rel4: ["+", ["case", yearFilt, ["get", "Unitarius"], 0]],
+						rel5: ["+", ["case", yearFilt, ["get", "RomaiKatolikus"], 0]],
+						rel61: ["+", ["case", yearFilt, ["get", "Evangelikus"], 0]],
+						rel62: ["+", ["case", yearFilt, ["get", "AgostaiEvang"], 0]],
+						rel63: ["+", ["case", yearFilt, ["get", "ZsinatPresb"], 0]],
+						rel7: ["+", ["case", yearFilt, ["get", "Izraelita"], 0]],
+						rel8: ["+", ["case", yearFilt, ["get", "Baptista"], 0]]
+					}
+				});
+				// circle layers for rendering clustered points
+                map.addLayer({
+                    "id": "clusters" + year,
+                    "type": "circle",
+                    "source": source,
+                    "filter": ["has", "point_count"],
+                    "paint": {
+                        "circle-color":  colors[0],
+						"circle-opacity": 0,
+						"circle-radius": 40
+                    }
+                });
+
+				// circle layers for rendering individual (unclustered) points
+				map.addLayer({
+					"id": "circles" + year,
+					"type": "circle",
+					"interactive": true,
+					"source": source,
+					"filter": ["!=", "cluster", true],
+					'layout': {
+						'visibility': 'visible'
+					},
+					"paint": {
+						"circle-color":  colors[1],
+						"circle-opacity": 0,
+						"circle-radius": 20
+					}
+				});
+			}
+
+			// after the GeoJSON data is loaded, update markers on the screen and do so on every map move/moveend
+			map.on('data', function (e) {
+				if (!e.isSourceLoaded) return;
+				
+				map.on('move', updateMarkers);
+				map.on('moveend', updateMarkers);
+
+				updateMarkers();
+			});
+			changeYear();
+		});
+
+	
+		// objects for caching and keeping track of HTML marker objects (for performance)
+		var markersOnScreen = [];
+
+		function updateMarkers() {
+			var newMarkers = [];
+			var year = document.getElementById('year').value;
+
+			// for every marker we've added previously, remove those that are no longer visible
+			for (id in markersOnScreen) {
+				markersOnScreen[id].remove();
+			}
+
+			var features = map.querySourceFeatures('source' + year);
+			//console.log(features)
+            var checked = updateReligions();
+			// for every cluster on the screen, create an HTML marker for it (if we didn't yet),
+			// and add it to the map if it's not there already
+			for (var i = 0; i < features.length; i++) {
+				var coords = features[i].geometry.coordinates;
+				var props = features[i].properties;
+
+				 var el = createDonutChart(props,checked);
+				if (el) {
+					marker = new mapboxgl.Marker({ element: el }).setLngLat(coords);
+					newMarkers.push(marker)
+					marker.addTo(map);
+				}
+			}
+
+			markersOnScreen = newMarkers;
+
+		}
+
+		function changeYear() {
+
+			for (var idx in years) {
+				var year = years[idx]
+				map.setLayoutProperty('circles' + year, 'visibility', 'none');
+                map.setLayoutProperty('clusters' + year, 'visibility', 'none');
+			}		
+
+			var year = document.getElementById('year').value;
+			map.setLayoutProperty('circles' + year, 'visibility', 'visible');
+            map.setLayoutProperty('clusters' + year, 'visibility', 'visible');
+
+            map.on('click', 'circles' + year, function (e) {
+				var features = map.queryRenderedFeatures(e.point, { layers: ['circles' + year], radius: 60 });
+				if (features.length) {
+					var props = features[0].properties;
+					var county  = props.Megye_x;
+					var name = features[0].properties.Telepules + " ";
+
+					for(var i in jsonresponse){
+            			if(jsonresponse[i].falu == name.toLowerCase() && jsonresponse[i].megye == county ){
+							var name_HU = jsonresponse[i].hun;
+        				}
+					}
+					if(name_HU === undefined || name_HU == "" ){
+						name_HU = name;
+					}
+
+					var details = name_HU;
+                    var html = createBarChart(props, checked, details);
+                    chartContainer.innerHTML = html;
+                    if (chartContainer.style.display === "none") {
+                        chartContainer.style.display = "block";
+                    }
+
+				}
+			});
+
+            map.on('click', 'clusters'+ year, function (e) {
+				//console.log(jsonresponse.megye);
+                var checked = updateReligions();
+                var features = map.queryRenderedFeatures(e.point, { layers: ['clusters' + year]});
+                var props = features[0].properties;
+
+
+
+                var clusterId = props.cluster_id;
+                point_count = props.point_count;
+                clusterSource = map.getSource('source' + year);
+
+                // Get all points under a cluster
+                clusterMax = [];
+                clusterSource.getClusterLeaves(clusterId, point_count, 0, function(err, aFeatures){
+                    for(var i in aFeatures){
+                        clusterMax.push(aFeatures[i].properties.Osszes);
+                    }
+                    var max = Math.max.apply(null, clusterMax);
+
+                    var n = clusterMax.indexOf(max);
+                    var name = aFeatures[n].properties.Telepules + " ";
+                    var county = aFeatures[n].properties.Megye_x;
+                    
+					for(var i in jsonresponse){
+            			if(jsonresponse[i].falu == name.toLowerCase() && jsonresponse[i].megye == county ){
+							var name_HU = jsonresponse[i].hun;
+        				}
+					}
+					if(name_HU === undefined || name_HU == "" ){
+						name_HU = name;
+					}
+					
+
+					var details = name_HU + " és környéke";
+                    var html = createBarChart(props, checked, details);
+                    chartContainer.innerHTML = html;
+                    if (chartContainer.style.display === "none") {
+                        chartContainer.style.display = "block";
+                    }                
+                })
+            });
+		}
+        function updateReligions(){
+            // Get the checkbox
+            chartContainer.style.display = "none";
+            checked = [];
+            var cboxes = document.getElementsByName("checkbox");
+            var len = cboxes.length;
+            for (var i=0; i<len; i++) {
+                 if(cboxes[i].checked){
+                    checked.push(i);
+                 } 
+            }
+            return checked;
+        }
+		
+		// code for creating an SVG donut chart from feature properties
+		function createDonutChart(props,checked) {
+			var id = props.cluster_id;
+			var offsets = [];
+		// if the point is unclusterized yet	
+			if(id === undefined){
+				var r1 = props.Ortodox;
+				var r2 = props.GorogKatolikus;
+				var r3 = props.Reformatus;
+				var r4 = props.Unitarius;
+				var r5 = props.RomaiKatolikus;
+				var r61 = props.Evangelikus;		
+				var r62 = props.AgostaiEvang;
+				var r63 = props.ZsinatPresb;
+				var r6 = r61 + r62 + r63;			
+				var r7 = props.Izraelita;
+				var r8 = props.Baptista;
+				var c = [r1, r2, r3, r4, r5, r6, r7,r8];			
+			}
+			else{
+				var rel6 = props.rel61 + props.rel62 + props.rel63;
+				var c = [props.rel1, props.rel2, props.rel3, props.rel4, props.rel5, rel6, props.rel7,props.rel8];	
+			}
+            var counts = [];
+            var col = [];
+            for (var i = 0; i < checked.length; i++) {
+				counts.push(c[checked[i]]);
+                col.push(colors[checked[i]]);
+			}
+			var total = 0;
+			for (var i = 0; i < counts.length; i++) {
+				offsets.push(total);
+				total += counts[i];
+			}
+				
+			if (total === 0) return null;
+			if (isNaN(total)) return null;
+
+			var fontSize = total >= 100000 ? 15 : total >= 50000 ? 14 : total >= 25000 ? 13 : total >= 15000 ? 12 : 13;
+			var r = total >= 100000 ? 50 : total >= 50000 ? 45 : total >= 25000 ? 40 : total >= 15000 ? 35 : 30;
+			
+			var r0 = Math.round(r * 0.65);
+			var w = r * 2;
+
+			var html = '<svg width="' + w + '" height="' + w + '" viewbox="0 0 ' + w + ' ' + w +
+				'" text-anchor="middle" style="font: ' + fontSize + 'px sans-serif">';
+
+			for (i = 0; i < counts.length; i++) {
+				html += donutSegment(offsets[i] / total, (offsets[i] + counts[i]) / total, r, r0, col[i]);
+			}
+
+			html += '<circle cx="' + r + '" cy="' + r + '" r="' + r0 +
+				'" fill="white" /><text dominant-baseline="central" transform="translate(' +
+				r + ', ' + r + ')">' + total.toLocaleString() + '</text></svg>';
+
+			var el = document.createElement('div');
+			el.innerHTML = html;
+			return el.firstChild;
+		}
+
+		function donutSegment(start, end, r, r0, color) {
+			if (end - start === 1) end -= 0.00001;
+			var a0 = 2 * Math.PI * (start - 0.25);
+			var a1 = 2 * Math.PI * (end - 0.25);
+			var x0 = Math.cos(a0), y0 = Math.sin(a0);
+			var x1 = Math.cos(a1), y1 = Math.sin(a1);
+			var largeArc = end - start > 0.5 ? 1 : 0;
+
+			return ['<path d="M', r + r0 * x0, r + r0 * y0, 'L', r + r * x0, r + r * y0,
+				'A', r, r, 0, largeArc, 1, r + r * x1, r + r * y1,
+				'L', r + r0 * x1, r + r0 * y1, 'A',
+				r0, r0, 0, largeArc, 0, r + r0 * x0, r + r0 * y0,
+				'" fill="' + color + '" />'].join(' ');
+		}
+
+        var rel = ["Ortodox","Görögkatolikus","Református","Unitárius","Római katolikus", "Evangélikus", "Zsidó","Baptista"]
+        function createBarChart(props,checked,details) {
+			var id = props.cluster_id;
+			//console.log(id)
+			if(id === undefined){
+				var r1 = props.Ortodox;
+				var r2 = props.GorogKatolikus;
+				var r3 = props.Reformatus;
+				var r4 = props.Unitarius;
+				var r5 = props.RomaiKatolikus;
+				var r61 = props.Evangelikus;		
+				var r62 = props.AgostaiEvang;
+				var r63 = props.ZsinatPresb;
+				var r6 = r61 + r62 + r63;			
+				var r7 = props.Izraelita;
+				var r8 = props.Baptista;
+				var c = [r1, r2, r3, r4, r5, r6, r7,r8];			
+			}
+			else{
+				var rel6 = props.rel61 + props.rel62 + props.rel63;
+				var c = [props.rel1, props.rel2, props.rel3, props.rel4, props.rel5, rel6, props.rel7,props.rel8];	
+			}	
+
+            var counts = [];
+            var col = [];
+            var religions = [];
+            for (var i = 0; i < checked.length; i++) {
+				counts.push(c[checked[i]]);
+                col.push(colors[checked[i]]);
+                religions.push(rel[checked[i]]);
+			}
+            
+            var total = 0;
+			for (var i = 0; i < counts.length; i++) {
+				total += counts[i];
+			}
+
+            for (var i = 0; i < counts.length-1; i++){     
+                // Last i elements are already in place    
+                for (var j = 0; j < counts.length-i-1; j++) {
+                    if (counts[j] < counts[j+1]){
+                        var a = counts[j];
+                        counts[j] = counts[j+1];
+                        counts[j+1] = a;
+                        var b = col[j];
+                        col[j] = col[j+1];
+                        col[j+1] = b;
+                        var c = religions[j];
+                        religions[j] = religions[j+1];
+                        religions[j+1] = c;
+                    }
+                }
+            }
+
+   
+            var html = '<svg class="chart" width="' + 420 + '" height="'+ ((21*counts.length)+40) + '" aria-labelledby="title" role="img">'+
+                '<title id="title">'+ religions[0]+'</title>'+
+                '<text x="'+ 10 +'" y="20" font-weight="bold">'+ details + '</text>'+
+                '<g class="bar">'+
+                '<text x="'+ 3 +'" y="40" dy=".35em">'+ religions[0]+'</text>'+
+                '<rect fill="#f0f0f0" width="'+ 250 + '" height="19" x = "110" y = "32"></rect>'+
+                '<rect fill="'+ col[0] + '" width="'+ counts[0]/total*250 +'" height="19" x = "110" y = "32">></rect>'+
+                '<text x="'+ (counts[0]/total*250 + 115) +'" y="40" dy=".35em">' + (counts[0]/total*100).toFixed(2) +'%</text>'+
+                '</g>';
+
+            for(i = 1; i< counts.length;i++){
+                html += '<g class="bar">'+
+                        '<title id="title">'+ religions[i]+'</title>'+
+                        '<text x="'+ 3 +'" y="' + (40 +i*21) + '" dy=".35em">'+ religions[i]+'</text>'+
+                        '<rect fill="#f0f0f0" width="'+ 250 + '" height="19" x = "110"  y=' + (32 +i*21) + '></rect>'+
+                        '<rect fill="'+ col[i] + '"width="'+ counts[i]/total*250 + '" height="19" x = "110"  y=' + (32 +i*21) + '></rect>'+
+                        '<text x="'+(counts[i]/total*250 + 115)  +'" y="' + (40 +i*21) + '" dy=".35em">'+ (counts[i]/total*100).toFixed(2) +'%</text>'+
+                        '</g>';
+            }          
+            html += '</svg>';
+            html += '<div id="closeutton" class = "closebutton"><button onclick="closeBarChart()" >X</button></div>';
+			//chartContainer.innerHTML = html;
+            return html;          
+        }
+
+        function closeBarChart(){
+            chartContainer.style.display = "none";   
+        }
+
+	</script>
+
+</body>
+
+</html>
